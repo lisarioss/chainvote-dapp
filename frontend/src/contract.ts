@@ -1,5 +1,5 @@
 export const CHAINVOTE_ADDRESS =
-  "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+  "0x3644F9d0897b5356053feEb4E98A866a1A5A7b98";
 
 export const CHAINVOTE_ABI = [
   "function getCandidates() view returns ((string name, uint256 voteCount)[])",

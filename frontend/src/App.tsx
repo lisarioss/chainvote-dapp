@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BrowserProvider, Contract } from "ethers";
 import { CHAINVOTE_ABI, CHAINVOTE_ADDRESS } from "./contract";
 import "./App.css";
@@ -9,18 +9,100 @@ type Candidate = {
   votes: number;
 };
 
+const SEPOLIA_CHAIN_ID = "0xaa36a7";
+
 function App() {
   const [account, setAccount] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [hasVoted, setHasVoted] = useState<boolean>(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
   const [votingCandidate, setVotingCandidate] = useState<number | null>(
     null
   );
 
-  // Conecta a MetaMask e garante que estamos na Hardhat Local
+  // Carrega os candidatos diretamente do contrato na Sepolia
+  const loadCandidates = useCallback(
+    async (provider?: BrowserProvider) => {
+      try {
+        setLoading(true);
+        setError("");
+
+        if (!window.ethereum) {
+          setError("MetaMask not found.");
+          return;
+        }
+
+        const blockchainProvider =
+          provider ?? new BrowserProvider(window.ethereum);
+
+        const network = await blockchainProvider.getNetwork();
+
+        if (network.chainId !== 11155111n) {
+          setCandidates([]);
+          setError("Switch MetaMask to the Sepolia network.");
+          return;
+        }
+
+        const contract = new Contract(
+          CHAINVOTE_ADDRESS,
+          CHAINVOTE_ABI,
+          blockchainProvider
+        );
+
+        const data = await contract.getCandidates();
+
+        const formattedCandidates: Candidate[] = data.map(
+          (
+            candidate: {
+              name: string;
+              voteCount: bigint;
+            },
+            index: number
+          ) => ({
+            id: index,
+            name: candidate.name,
+            votes: Number(candidate.voteCount),
+          })
+        );
+
+        setCandidates(formattedCandidates);
+      } catch (err) {
+        console.error(err);
+        setCandidates([]);
+        setError(
+          "Unable to load candidates from Sepolia. Check the network and contract address."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Verifica se a carteira conectada já votou
+  async function checkVotingStatus(
+    currentAccount: string,
+    provider: BrowserProvider
+  ) {
+    try {
+      const contract = new Contract(
+        CHAINVOTE_ADDRESS,
+        CHAINVOTE_ABI,
+        provider
+      );
+
+      const alreadyVoted = await contract.hasVoted(currentAccount);
+
+      setHasVoted(alreadyVoted);
+    } catch (err) {
+      console.error(err);
+      setHasVoted(false);
+    }
+  }
+
+  // Conecta a MetaMask e muda automaticamente para Sepolia
   async function connectWallet() {
     try {
       setError("");
@@ -31,10 +113,9 @@ function App() {
         return;
       }
 
-      // Hardhat Local = Chain ID 31337 = 0x7A69
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x7A69" }],
+        params: [{ chainId: SEPOLIA_CHAIN_ID }],
       });
 
       const provider = new BrowserProvider(window.ethereum);
@@ -43,79 +124,25 @@ function App() {
 
       const currentAccount = accounts[0];
 
+      if (!currentAccount) {
+        setError("No MetaMask account was selected.");
+        return;
+      }
+
       setAccount(currentAccount);
 
-      // Consulta se essa carteira já votou
-      const contract = new Contract(
-        CHAINVOTE_ADDRESS,
-        CHAINVOTE_ABI,
-        provider
-      );
-
-      const alreadyVoted = await contract.hasVoted(currentAccount);
-
-      setHasVoted(alreadyVoted);
-
-      // Atualiza os candidatos
+      await checkVotingStatus(currentAccount, provider);
       await loadCandidates(provider);
     } catch (err) {
       console.error(err);
 
       setError(
-        "Unable to connect wallet. Make sure MetaMask is using Hardhat Local."
+        "Unable to connect wallet. Make sure MetaMask is using the Sepolia network."
       );
     }
   }
 
-  // Busca os candidatos diretamente do smart contract
-  async function loadCandidates(provider?: BrowserProvider) {
-    try {
-      setLoading(true);
-      setError("");
-
-      if (!window.ethereum) {
-        setError("MetaMask not found.");
-        return;
-      }
-
-      const blockchainProvider =
-        provider ?? new BrowserProvider(window.ethereum);
-
-      const contract = new Contract(
-        CHAINVOTE_ADDRESS,
-        CHAINVOTE_ABI,
-        blockchainProvider
-      );
-
-      const data = await contract.getCandidates();
-
-      const formattedCandidates: Candidate[] = data.map(
-        (
-          candidate: {
-            name: string;
-            voteCount: bigint;
-          },
-          index: number
-        ) => ({
-          id: index,
-          name: candidate.name,
-          votes: Number(candidate.voteCount),
-        })
-      );
-
-      setCandidates(formattedCandidates);
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        "Unable to load candidates. Check that Hardhat Local is running and the contract address is correct."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Registra o voto no smart contract
+  // Registra o voto no contrato da Sepolia
   async function vote(candidateId: number) {
     try {
       setError("");
@@ -134,9 +161,15 @@ function App() {
 
       const provider = new BrowserProvider(window.ethereum);
 
+      const network = await provider.getNetwork();
+
+      if (network.chainId !== 11155111n) {
+        setError("Switch MetaMask to Sepolia before voting.");
+        return;
+      }
+
       const signer = await provider.getSigner();
 
-      // Para escrever na blockchain precisamos do signer
       const contract = new Contract(
         CHAINVOTE_ADDRESS,
         CHAINVOTE_ABI,
@@ -146,19 +179,17 @@ function App() {
       const transaction = await contract.vote(candidateId);
 
       setSuccess(
-        "Transaction sent. Waiting for blockchain confirmation..."
+        "Transaction sent to Sepolia. Waiting for blockchain confirmation..."
       );
 
-      // Aguarda a transação ser minerada
       await transaction.wait();
 
       setHasVoted(true);
 
       setSuccess(
-        "Vote successfully registered on the blockchain."
+        "Vote successfully registered on the Sepolia blockchain."
       );
 
-      // Busca novamente os resultados atualizados
       await loadCandidates(provider);
     } catch (err) {
       console.error(err);
@@ -173,11 +204,76 @@ function App() {
     }
   }
 
-  // Tenta carregar os candidatos quando a página abre
+  // Detecta automaticamente conta já autorizada
   useEffect(() => {
-    if (window.ethereum) {
-      loadCandidates();
+    async function initialize() {
+      if (!window.ethereum) {
+        return;
+      }
+
+      try {
+        const provider = new BrowserProvider(window.ethereum);
+
+        const network = await provider.getNetwork();
+
+        if (network.chainId !== 11155111n) {
+          setCandidates([]);
+          return;
+        }
+
+        const accounts = await provider.send("eth_accounts", []);
+
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          await checkVotingStatus(accounts[0], provider);
+        }
+
+        await loadCandidates(provider);
+      } catch (err) {
+        console.error(err);
+      }
     }
+
+    initialize();
+  }, [loadCandidates]);
+
+  // Detecta quando o usuário troca de conta ou rede na MetaMask
+  useEffect(() => {
+    if (!window.ethereum) {
+      return;
+    }
+
+    function handleAccountsChanged(accounts: string[]) {
+      if (accounts.length === 0) {
+        setAccount(null);
+        setHasVoted(false);
+      } else {
+        setAccount(accounts[0]);
+        setHasVoted(false);
+      }
+
+      setSuccess("");
+      setError("");
+    }
+
+    function handleChainChanged() {
+      window.location.reload();
+    }
+
+    window.ethereum.on?.("accountsChanged", handleAccountsChanged);
+    window.ethereum.on?.("chainChanged", handleChainChanged);
+
+    return () => {
+      window.ethereum?.removeListener?.(
+        "accountsChanged",
+        handleAccountsChanged
+      );
+
+      window.ethereum?.removeListener?.(
+        "chainChanged",
+        handleChainChanged
+      );
+    };
   }, []);
 
   return (
@@ -188,32 +284,21 @@ function App() {
           <p>Decentralized Voting DApp</p>
         </div>
 
-        <button
-          className="wallet-button"
-          onClick={connectWallet}
-        >
+        <button className="wallet-button" onClick={connectWallet}>
           {account
             ? `${account.slice(0, 6)}...${account.slice(-4)}`
             : "Connect Wallet"}
         </button>
       </header>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
-      {success && (
-        <div className="success-message">
-          {success}
-        </div>
-      )}
+      {success && <div className="success-message">{success}</div>}
 
       <main className="container">
         <section className="hero">
           <span className="network">
-            Ethereum · Hardhat Local
+            Ethereum · Sepolia Testnet
           </span>
 
           <h2>Cast your vote on-chain</h2>
@@ -246,10 +331,7 @@ function App() {
         <section className="candidates-section">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">
-                Candidates
-              </span>
-
+              <span className="eyebrow">Candidates</span>
               <h3>Select one option</h3>
             </div>
 
@@ -259,9 +341,7 @@ function App() {
           </div>
 
           {loading ? (
-            <p>
-              Loading candidates from blockchain...
-            </p>
+            <p>Loading candidates from Sepolia...</p>
           ) : (
             <div className="candidate-grid">
               {candidates.map((candidate) => (
@@ -270,30 +350,21 @@ function App() {
                   key={candidate.id}
                 >
                   <div className="candidate-number">
-                    {String(candidate.id + 1).padStart(
-                      2,
-                      "0"
-                    )}
+                    {String(candidate.id + 1).padStart(2, "0")}
                   </div>
 
                   <h4>{candidate.name}</h4>
 
                   <div className="votes">
-                    <strong>
-                      {candidate.votes}
-                    </strong>
+                    <strong>{candidate.votes}</strong>
 
                     <span>
-                      {candidate.votes === 1
-                        ? "vote"
-                        : "votes"}
+                      {candidate.votes === 1 ? "vote" : "votes"}
                     </span>
                   </div>
 
                   <button
-                    onClick={() =>
-                      vote(candidate.id)
-                    }
+                    onClick={() => vote(candidate.id)}
                     disabled={
                       !account ||
                       hasVoted ||
@@ -304,8 +375,7 @@ function App() {
                       ? "Connect wallet to vote"
                       : hasVoted
                         ? "Already voted"
-                        : votingCandidate ===
-                            candidate.id
+                        : votingCandidate === candidate.id
                           ? "Confirming..."
                           : "Vote"}
                   </button>
@@ -318,7 +388,7 @@ function App() {
 
       <footer>
         <span>ChainVote</span>
-        <span>Powered by Ethereum</span>
+        <span>Powered by Ethereum · Sepolia</span>
       </footer>
     </div>
   );
