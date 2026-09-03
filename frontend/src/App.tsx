@@ -18,7 +18,12 @@ function App() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+
   const [votingCandidate, setVotingCandidate] = useState<number | null>(
+    null
+  );
+
+  const [transactionHash, setTransactionHash] = useState<string | null>(
     null
   );
 
@@ -147,6 +152,7 @@ function App() {
     try {
       setError("");
       setSuccess("");
+      setTransactionHash(null);
       setVotingCandidate(candidateId);
 
       if (!window.ethereum) {
@@ -178,8 +184,10 @@ function App() {
 
       const transaction = await contract.vote(candidateId);
 
-      setSuccess(
-        "Transaction sent to Sepolia. Waiting for blockchain confirmation..."
+        setTransactionHash(transaction.hash);
+
+        setSuccess(
+          "Transaction sent to Sepolia. Waiting for blockchain confirmation..."
       );
 
       await transaction.wait();
@@ -293,7 +301,21 @@ function App() {
 
       {error && <div className="error-message">{error}</div>}
 
-      {success && <div className="success-message">{success}</div>}
+      {success && (
+    <div className="success-message">
+      <span>{success}</span>
+
+        {transactionHash && (
+        <a
+          href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View transaction on Etherscan
+        </a>
+      )}
+    </div>
+)}
 
       <main className="container">
         <section className="hero">
