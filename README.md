@@ -1,10 +1,14 @@
 # ChainVote
 
-ChainVote is a decentralized voting application built on Ethereum that allows users to cast votes directly on the blockchain using MetaMask.
+ChainVote is a full-stack Web3 decentralized voting application built on Ethereum.
 
-The project combines a Solidity smart contract with a React and TypeScript frontend, providing a complete Web3 voting flow where each wallet can vote only once.
+Users can connect their MetaMask wallet, select a candidate and cast a vote through an on-chain transaction. Voting rules are enforced by a Solidity smart contract deployed on the Sepolia testnet, including protection against multiple votes from the same wallet.
 
-The smart contract is currently deployed on the Ethereum Sepolia testnet.
+**Live Demo:** https://chainvote-dapp.vercel.app/
+
+**Smart Contract:** `0x3644F9d0897b5356053feEb4E98A866a1A5A7b98`
+
+The project demonstrates practical integration between Solidity, Hardhat, React, TypeScript, Ethers.js and MetaMask.
 
 ## Overview
 
@@ -266,6 +270,7 @@ The following milestones are complete:
 - Frontend integration with Sepolia
 - Successful on-chain vote
 - Production frontend build
+- Public frontend deployment with Vercel
 
 ## Roadmap
 
@@ -278,6 +283,7 @@ Planned improvements include:
 - Additional smart contract tests
 - Contract verification
 - Improved accessibility and responsive behavior
+- Public frontend deployment
 
 ## Author
 
