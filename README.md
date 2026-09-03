@@ -1,57 +1,286 @@
-# Sample Hardhat 3 Project (`mocha` and `ethers`)
+# ChainVote
 
-This project showcases a Hardhat 3 project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+ChainVote is a decentralized voting application built on Ethereum that allows users to cast votes directly on the blockchain using MetaMask.
 
-To learn more about Hardhat 3, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3](https://hardhat.org/hardhat3-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+The project combines a Solidity smart contract with a React and TypeScript frontend, providing a complete Web3 voting flow where each wallet can vote only once.
 
-## Project Overview
+The smart contract is currently deployed on the Ethereum Sepolia testnet.
 
-This example project includes:
+## Overview
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+ChainVote was developed to demonstrate the integration between a Web3 frontend and an Ethereum smart contract.
 
-## Usage
+Users connect their MetaMask wallet, select a candidate and submit a transaction to the blockchain. The smart contract validates the vote, prevents the same wallet from voting more than once and stores the results on-chain.
 
-### Running Tests
+The frontend reads the current voting state directly from the deployed contract.
 
-To run all the tests in the project, execute the following command:
+## Features
 
-```shell
+- MetaMask wallet connection
+- Automatic Sepolia network switching
+- Candidate data loaded directly from the blockchain
+- On-chain voting
+- One vote per wallet
+- Duplicate-vote protection enforced by the smart contract
+- Real-time vote count update after transaction confirmation
+- Account and network change detection
+- Sepolia testnet deployment
+- Hardhat Ignition deployment workflow
+- Automated smart contract tests
+- Production-ready frontend build
+
+## Tech Stack
+
+### Smart Contract
+
+- Solidity 0.8.34
+- Hardhat 3
+- Hardhat Ignition
+- Mocha
+- Ethers.js
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- Ethers.js
+- MetaMask
+
+### Blockchain
+
+- Ethereum
+- Sepolia Testnet
+
+## Architecture
+
+```text
+User
+  |
+  v
+React + TypeScript
+  |
+  v
+Ethers.js
+  |
+  v
+MetaMask
+  |
+  | signs transaction
+  v
+Ethereum Sepolia
+  |
+  v
+ChainVote.sol
+  |
+  +-- Candidate data
+  +-- Vote counts
+  +-- Wallet voting status
+```
+
+The frontend uses Ethers.js to communicate with the smart contract.
+
+Read operations retrieve candidate information and voting status directly from Sepolia. Write operations require the user to sign the transaction through MetaMask.
+
+## Voting Flow
+
+1. The user opens ChainVote.
+2. The frontend connects to MetaMask.
+3. MetaMask switches to the Sepolia network when necessary.
+4. The application loads the candidates from the smart contract.
+5. The user selects a candidate.
+6. MetaMask requests transaction confirmation.
+7. The vote is submitted to Sepolia.
+8. The smart contract validates the wallet and candidate.
+9. The vote is recorded on-chain.
+10. The frontend reloads the results after confirmation.
+
+## Voting Rules
+
+The smart contract enforces the following rules:
+
+- Each wallet can vote only once.
+- A vote must reference a valid candidate.
+- Vote counts are stored on-chain.
+- Duplicate voting is rejected by the smart contract rather than only by the frontend.
+
+This means that bypassing the user interface does not bypass the one-wallet-one-vote restriction.
+
+## Sepolia Deployment
+
+Network:
+
+```text
+Ethereum Sepolia
+Chain ID: 11155111
+```
+
+ChainVote contract:
+
+```text
+0x3644F9d0897b5356053feEb4E98A866a1A5A7b98
+```
+
+The application currently interacts with this deployment.
+
+## Project Structure
+
+```text
+chainvote-dapp/
+|
+|-- contracts/
+|   `-- ChainVote.sol
+|
+|-- frontend/
+|   |-- src/
+|   |   |-- App.tsx
+|   |   |-- contract.ts
+|   |   |-- App.css
+|   |   `-- main.tsx
+|   |
+|   `-- package.json
+|
+|-- ignition/
+|   |-- modules/
+|   |   `-- ChainVote.ts
+|   |
+|   `-- deployments/
+|
+|-- scripts/
+|   `-- check-sepolia.ts
+|
+|-- test/
+|
+|-- hardhat.config.ts
+|-- package.json
+`-- README.md
+```
+
+## Running the Project Locally
+
+### Requirements
+
+Before running the project, install:
+
+- Node.js
+- npm
+- MetaMask
+
+Clone the repository and install the smart contract dependencies:
+
+```bash
+git clone https://github.com/lisarioss/chainvote-dapp.git
+cd chainvote-dapp
+npm install
+```
+
+Install the frontend dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+Open the local address displayed by Vite in your browser.
+
+MetaMask is required to interact with the voting contract.
+
+## Production Build
+
+To verify the frontend production build:
+
+```bash
+cd frontend
+npm run build
+```
+
+The build performs TypeScript validation and generates the optimized Vite production bundle.
+
+## Smart Contract Tests
+
+From the project root:
+
+```bash
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+The test suite validates the behavior of the smart contract before deployment.
 
-```shell
-npx hardhat test solidity
-npx hardhat test mocha
+## Deploying with Hardhat Ignition
+
+The deployment module is located at:
+
+```text
+ignition/modules/ChainVote.ts
 ```
 
-### Make a deployment to Sepolia
+For Sepolia deployment, the Hardhat configuration expects:
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+```text
+SEPOLIA_RPC_URL
+SEPOLIA_PRIVATE_KEY
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+Sensitive values should never be committed to the repository.
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+They can be stored using the Hardhat keystore:
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
+```bash
+npx hardhat keystore set SEPOLIA_RPC_URL
 npx hardhat keystore set SEPOLIA_PRIVATE_KEY
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+Deploy:
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
+```bash
+npx hardhat ignition deploy ignition/modules/ChainVote.ts --network sepolia
 ```
+
+## Security Considerations
+
+ChainVote is an educational portfolio project and should not be considered a production election system.
+
+The current implementation demonstrates fundamental blockchain voting concepts, including transaction signing, wallet-based vote restriction and immutable on-chain vote storage.
+
+A production-grade voting system would require additional mechanisms for identity verification, voter eligibility, privacy, governance, auditing and security review.
+
+Private keys and RPC credentials must never be committed to source control.
+
+## Current Status
+
+The following milestones are complete:
+
+- Smart contract implementation
+- Automated contract tests
+- Local Hardhat deployment
+- React frontend
+- MetaMask integration
+- Multiple-wallet local testing
+- Sepolia deployment
+- Frontend integration with Sepolia
+- Successful on-chain vote
+- Production frontend build
+
+## Roadmap
+
+Planned improvements include:
+
+- Public frontend deployment
+- Transaction links to a Sepolia block explorer
+- Improved transaction feedback
+- Voting result visualization
+- Additional smart contract tests
+- Contract verification
+- Improved accessibility and responsive behavior
+
+## Author
+
+Lisa Rios
+
+GitHub: https://github.com/lisarioss
