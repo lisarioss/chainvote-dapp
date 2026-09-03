@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-40712d18230dd61d89f432f79218dcf8ee382fc5",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.15.0"
+  },
+  "userSourceNameMap": {
+    "contracts/ChainVote.sol": "project/contracts/ChainVote.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/ChainVote.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ncontract ChainVote {\r\n    struct Candidate {\r\n        string name;\r\n        uint256 voteCount;\r\n    }\r\n\r\n    Candidate[] private candidates;\r\n\r\n    mapping(address => bool) public hasVoted;\r\n\r\n    event VoteCast(\r\n        address indexed voter,\r\n        uint256 indexed candidateId\r\n    );\r\n\r\n    constructor(string[] memory candidateNames) {\r\n        require(candidateNames.length >= 2, \"At least two candidates required\");\r\n\r\n        for (uint256 i = 0; i < candidateNames.length; i++) {\r\n            require(\r\n                bytes(candidateNames[i]).length > 0,\r\n                \"Candidate name cannot be empty\"\r\n            );\r\n\r\n            candidates.push(\r\n                Candidate({\r\n                    name: candidateNames[i],\r\n                    voteCount: 0\r\n                })\r\n            );\r\n        }\r\n    }\r\n\r\n    function vote(uint256 candidateId) external {\r\n        require(!hasVoted[msg.sender], \"Address has already voted\");\r\n        require(candidateId < candidates.length, \"Invalid candidate\");\r\n\r\n        hasVoted[msg.sender] = true;\r\n        candidates[candidateId].voteCount++;\r\n\r\n        emit VoteCast(msg.sender, candidateId);\r\n    }\r\n\r\n    function getCandidate(\r\n        uint256 candidateId\r\n    ) external view returns (string memory name, uint256 voteCount) {\r\n        require(candidateId < candidates.length, \"Invalid candidate\");\r\n\r\n        Candidate memory candidate = candidates[candidateId];\r\n\r\n        return (candidate.name, candidate.voteCount);\r\n    }\r\n\r\n    function getCandidates() external view returns (Candidate[] memory) {\r\n        return candidates;\r\n    }\r\n\r\n    function getCandidatesCount() external view returns (uint256) {\r\n        return candidates.length;\r\n    }\r\n}"
+      }
+    }
+  }
+}
