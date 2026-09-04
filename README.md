@@ -6,7 +6,11 @@ Users can connect their MetaMask wallet, select a candidate and cast a vote thro
 
 **Live Demo:** https://chainvote-dapp.vercel.app/
 
-**Smart Contract:** `0x3644F9d0897b5356053feEb4E98A866a1A5A7b98`
+**Verified Smart Contract:**  
+https://sepolia.etherscan.io/address/0x3644F9d0897b5356053feEb4E98A866a1A5A7b98#code
+
+**Contract Address:**  
+`0x3644F9d0897b5356053feEb4E98A866a1A5A7b98`
 
 The project demonstrates practical integration between Solidity, Hardhat, React, TypeScript, Ethers.js and MetaMask.
 
@@ -126,6 +130,12 @@ ChainVote contract:
 ```
 
 The application currently interacts with this deployment.
+
+### Contract Verification
+
+The ChainVote smart contract source code is verified and publicly available on Etherscan:
+
+https://sepolia.etherscan.io/address/0x3644F9d0897b5356053feEb4E98A866a1A5A7b98#code
 
 ## Project Structure
 
@@ -271,6 +281,7 @@ The following milestones are complete:
 - Successful on-chain vote
 - Production frontend build
 - Public frontend deployment with Vercel
+- Smart contract verified on Etherscan
 
 ## Roadmap
 
